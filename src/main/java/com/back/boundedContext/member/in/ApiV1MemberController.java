@@ -1,20 +1,81 @@
 package com.back.boundedContext.member.in;
 
 import com.back.boundedContext.member.app.MemberFacade;
+import com.back.boundedContext.member.domain.Member;
+import com.back.global.rq.Rq;
+import com.back.global.rsData.RsData;
+import com.back.shared.member.dto.MemberDto;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/member/members")
 @RequiredArgsConstructor
 public class ApiV1MemberController {
     private final MemberFacade memberFacade;
+    private final Rq rq;
 
-    @GetMapping("randomSecureTip")
+    @GetMapping("/randomSecureTip")
     public String getRandomSecureTip() {
-        return memberFacade
-                .getRandomSecureTip();
+        return memberFacade.getRandomSecureTip();
+    }
+
+    public record JoinReqBody(
+            @NotBlank @Size(min = 2, max = 30) String username,
+            @NotBlank @Size(min = 2, max = 30) String password,
+            @NotBlank @Size(min = 2, max = 30) String nickname
+    ) {}
+
+    @PostMapping("/join")
+    @Transactional
+    public RsData<MemberDto> join(@Valid @RequestBody JoinReqBody reqBody) {
+        RsData<Member> rs = memberFacade.join(reqBody.username(), reqBody.password(), reqBody.nickname());
+        return new RsData<>(rs.getResultCode(), rs.getMsg(), rs.getData().toDto());
+    }
+
+    public record LoginReqBody(
+            @NotBlank @Size(min = 2, max = 30) String username,
+            @NotBlank @Size(min = 2, max = 30) String password
+    ) {}
+
+    public record LoginResBody(
+            MemberDto item,
+            String apiKey,
+            String accessToken
+    ) {}
+
+    @PostMapping("/login")
+    @Transactional(readOnly = true)
+    public RsData<LoginResBody> login(@Valid @RequestBody LoginReqBody reqBody) {
+        Member member = memberFacade.login(reqBody.username(), reqBody.password());
+        String accessToken = memberFacade.genAccessToken(member);
+
+        rq.setCookie("apiKey", member.getApiKey());
+        rq.setCookie("accessToken", accessToken);
+
+        return new RsData<>(
+                "200-1",
+                "%s님 환영합니다.".formatted(member.getNickname()),
+                new LoginResBody(member.toDto(), member.getApiKey(), accessToken)
+        );
+    }
+
+    @DeleteMapping("/logout")
+    public RsData<Void> logout() {
+        rq.deleteCookie("apiKey");
+        rq.deleteCookie("accessToken");
+
+        return new RsData<>("200-1", "로그아웃 되었습니다.");
+    }
+
+    @GetMapping("/me")
+    @Transactional(readOnly = true)
+    public MemberDto me() {
+        Member member = memberFacade.findById(rq.getActor().getId()).get();
+        return member.toDto();
     }
 }
