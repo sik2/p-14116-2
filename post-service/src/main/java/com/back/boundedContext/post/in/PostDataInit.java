@@ -4,7 +4,6 @@ import com.back.boundedContext.post.app.PostFacade;
 import com.back.boundedContext.post.domain.Post;
 import com.back.boundedContext.post.domain.PostMember;
 import com.back.global.rsData.RsData;
-import com.back.shared.member.dto.MemberDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
@@ -12,8 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Configuration
 @Slf4j
@@ -41,17 +38,10 @@ public class PostDataInit {
 
     @Transactional
     public void makeBaseMembers() {
-        // 독립 실행 시 PostMember가 없으면 직접 생성
-        LocalDateTime now = LocalDateTime.now();
-
+        // 멤버는 Kafka 이벤트(MemberJoinedEvent)를 통해 동기화됨
+        // member-service에서 회원가입 시 이벤트 발행 -> PostKafkaListener에서 수신
         if (postFacade.findMemberByUsername("user1").isEmpty()) {
-            postFacade.syncMember(new MemberDto(1, now, now, "user1", "유저1", 0));
-        }
-        if (postFacade.findMemberByUsername("user2").isEmpty()) {
-            postFacade.syncMember(new MemberDto(2, now, now, "user2", "유저2", 0));
-        }
-        if (postFacade.findMemberByUsername("user3").isEmpty()) {
-            postFacade.syncMember(new MemberDto(3, now, now, "user3", "유저3", 0));
+            log.info("PostMember not found. Members will be synced via Kafka events from member-service.");
         }
     }
 
@@ -59,9 +49,18 @@ public class PostDataInit {
     public void makeBasePosts() {
         if (postFacade.count() > 0) return;
 
-        PostMember user1Member = postFacade.findMemberByUsername("user1").get();
-        PostMember user2Member = postFacade.findMemberByUsername("user2").get();
-        PostMember user3Member = postFacade.findMemberByUsername("user3").get();
+        var user1Opt = postFacade.findMemberByUsername("user1");
+        var user2Opt = postFacade.findMemberByUsername("user2");
+        var user3Opt = postFacade.findMemberByUsername("user3");
+
+        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) {
+            log.info("PostMembers not found. Skipping post creation. (Members sync required via Kafka)");
+            return;
+        }
+
+        PostMember user1Member = user1Opt.get();
+        PostMember user2Member = user2Opt.get();
+        PostMember user3Member = user3Opt.get();
 
         RsData<Post> post1RsData = postFacade.write(user1Member, "제목1", "내용1");
         log.debug(post1RsData.getMsg());
@@ -84,18 +83,31 @@ public class PostDataInit {
 
     @Transactional
     public void makeBasePostComments() {
-        Post post1 = postFacade.findById(1).get();
+        var post1Opt = postFacade.findById(1);
+        if (post1Opt.isEmpty()) {
+            log.info("Posts not found. Skipping comment creation.");
+            return;
+        }
+
+        Post post1 = post1Opt.get();
+        if (post1.hasComments()) return;
+
+        var user1Opt = postFacade.findMemberByUsername("user1");
+        var user2Opt = postFacade.findMemberByUsername("user2");
+        var user3Opt = postFacade.findMemberByUsername("user3");
+
+        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) {
+            log.info("PostMembers not found. Skipping comment creation.");
+            return;
+        }
+
+        PostMember user1Member = user1Opt.get();
+        PostMember user2Member = user2Opt.get();
+        PostMember user3Member = user3Opt.get();
+
         Post post2 = postFacade.findById(2).get();
         Post post3 = postFacade.findById(3).get();
         Post post4 = postFacade.findById(4).get();
-        Post post5 = postFacade.findById(5).get();
-        Post post6 = postFacade.findById(6).get();
-
-        PostMember user1Member = postFacade.findMemberByUsername("user1").get();
-        PostMember user2Member = postFacade.findMemberByUsername("user2").get();
-        PostMember user3Member = postFacade.findMemberByUsername("user3").get();
-
-        if (post1.hasComments()) return;
 
         post1.addComment(user1Member, "댓글1");
         post1.addComment(user2Member, "댓글2");

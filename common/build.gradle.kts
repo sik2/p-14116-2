@@ -32,6 +32,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-security")
     api("org.springframework.boot:spring-boot-starter-json")
     api("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0")
+    api("org.springframework.kafka:spring-kafka")
     api("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
