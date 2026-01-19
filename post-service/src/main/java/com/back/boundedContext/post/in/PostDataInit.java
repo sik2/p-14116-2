@@ -4,6 +4,7 @@ import com.back.boundedContext.post.app.PostFacade;
 import com.back.boundedContext.post.domain.Post;
 import com.back.boundedContext.post.domain.PostMember;
 import com.back.global.rsData.RsData;
+import com.back.shared.member.dto.MemberDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Configuration
 @Slf4j
@@ -30,9 +33,26 @@ public class PostDataInit {
     @Order(2)
     public ApplicationRunner postDataInitApplicationRunner() {
         return args -> {
+            self.makeBaseMembers();
             self.makeBasePosts();
             self.makeBasePostComments();
         };
+    }
+
+    @Transactional
+    public void makeBaseMembers() {
+        // 독립 실행 시 PostMember가 없으면 직접 생성
+        LocalDateTime now = LocalDateTime.now();
+
+        if (postFacade.findMemberByUsername("user1").isEmpty()) {
+            postFacade.syncMember(new MemberDto(1, now, now, "user1", "유저1", 0));
+        }
+        if (postFacade.findMemberByUsername("user2").isEmpty()) {
+            postFacade.syncMember(new MemberDto(2, now, now, "user2", "유저2", 0));
+        }
+        if (postFacade.findMemberByUsername("user3").isEmpty()) {
+            postFacade.syncMember(new MemberDto(3, now, now, "user3", "유저3", 0));
+        }
     }
 
     @Transactional
