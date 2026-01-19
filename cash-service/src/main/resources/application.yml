@@ -16,7 +16,7 @@ spring:
     serialization:
       fail-on-empty-beans: false
   datasource:
-    url: jdbc:h2:./db_cash_dev;MODE=MySQL
+    url: jdbc:h2:./cash-service/db_dev;MODE=MySQL
     username: sa
     password:
     driver-class-name: org.h2.Driver
