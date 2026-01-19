@@ -1,10 +1,10 @@
 server:
-  port: 8080
+  port: 8081
 spring:
   main:
     allow-bean-definition-overriding: true
   application:
-    name: back
+    name: post-service
   config:
     import: optional:file:.env[.properties]
   profiles:
@@ -15,6 +15,11 @@ spring:
   jackson:
     serialization:
       fail-on-empty-beans: false
+  datasource:
+    url: jdbc:h2:./db_post_dev;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
       ddl-auto: update
@@ -37,7 +42,7 @@ logging:
     org.springframework.transaction.interceptor: TRACE
 custom:
   global:
-    internalBackUrl: http://localhost:${server.port:8080}
+    internalBackUrl: http://localhost:${server.port:8081}
     holdingMemberId: 2
   jwt:
     secretKey: abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
