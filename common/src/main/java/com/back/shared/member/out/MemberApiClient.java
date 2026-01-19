@@ -8,9 +8,9 @@ import org.springframework.web.client.RestClient;
 public class MemberApiClient {
     private final RestClient restClient;
 
-    public MemberApiClient(@Value("${custom.global.internalBackUrl}") String internalBackUrl) {
+    public MemberApiClient(@Value("${custom.services.member-url}") String memberServiceUrl) {
         this.restClient = RestClient.builder()
-                .baseUrl(internalBackUrl + "/api/v1/member")
+                .baseUrl(memberServiceUrl + "/api/v1/member")
                 .build();
     }
 

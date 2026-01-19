@@ -10,9 +10,9 @@ import org.springframework.web.client.RestClient;
 public class CashApiClient {
     private final RestClient restClient;
 
-    public CashApiClient(@Value("${custom.global.internalBackUrl}") String internalBackUrl) {
+    public CashApiClient(@Value("${custom.services.cash-url}") String cashServiceUrl) {
         this.restClient = RestClient.builder()
-                .baseUrl(internalBackUrl + "/api/v1/cash")
+                .baseUrl(cashServiceUrl + "/api/v1/cash")
                 .build();
     }
 

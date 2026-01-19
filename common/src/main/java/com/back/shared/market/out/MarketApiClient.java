@@ -12,9 +12,9 @@ import java.util.List;
 public class MarketApiClient {
     private final RestClient restClient;
 
-    public MarketApiClient(@Value("${custom.global.internalBackUrl}") String internalBackUrl) {
+    public MarketApiClient(@Value("${custom.services.market-url}") String marketServiceUrl) {
         this.restClient = RestClient.builder()
-                .baseUrl(internalBackUrl + "/api/v1/market")
+                .baseUrl(marketServiceUrl + "/api/v1/market")
                 .build();
     }
 
