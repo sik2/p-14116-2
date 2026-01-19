@@ -26,6 +26,15 @@ public class PostApiClient {
                 });
     }
 
+    public List<PostDto> getItems(String apiKey) {
+        return restClient.get()
+                .uri("/posts")
+                .header("Authorization", "Bearer " + apiKey)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {
+                });
+    }
+
     public PostDto getItem(int id) {
         return restClient.get()
                 .uri("/posts/%d".formatted(id))

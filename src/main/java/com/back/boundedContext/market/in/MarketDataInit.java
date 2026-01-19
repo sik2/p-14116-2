@@ -5,6 +5,7 @@ import com.back.boundedContext.market.domain.Cart;
 import com.back.boundedContext.market.domain.MarketMember;
 import com.back.boundedContext.market.domain.Order;
 import com.back.boundedContext.market.domain.Product;
+import com.back.boundedContext.member.app.MemberFacade;
 import com.back.shared.post.dto.PostDto;
 import com.back.shared.post.out.PostApiClient;
 import lombok.extern.slf4j.Slf4j;
@@ -21,14 +22,17 @@ import java.util.List;
 public class MarketDataInit {
     private final MarketDataInit self;
     private final MarketFacade marketFacade;
+    private final MemberFacade memberFacade;
     private final PostApiClient postApiClient;
 
     public MarketDataInit(
             @Lazy MarketDataInit self,
             MarketFacade marketFacade,
+            MemberFacade memberFacade,
             PostApiClient postApiClient) {
         this.self = self;
         this.marketFacade = marketFacade;
+        this.memberFacade = memberFacade;
         this.postApiClient = postApiClient;
     }
 
@@ -47,7 +51,11 @@ public class MarketDataInit {
     public void makeBaseProducts() {
         if (marketFacade.productsCount() > 0) return;
 
-        List<PostDto> posts = postApiClient.getItems();
+        String systemApiKey = memberFacade.findByUsername("system")
+                .map(member -> member.getApiKey())
+                .orElseThrow(() -> new RuntimeException("system 계정을 찾을 수 없습니다."));
+
+        List<PostDto> posts = postApiClient.getItems(systemApiKey);
 
         PostDto post1 = posts.get(5);
         PostDto post2 = posts.get(4);

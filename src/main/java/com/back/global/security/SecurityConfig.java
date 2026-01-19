@@ -24,11 +24,11 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(
                         auth -> auth
-//                                .requestMatchers("/h2-console/**").permitAll()
-//                                .requestMatchers("/api/*/member/members/login", "/api/*/member/members/logout").permitAll()
-//                                .requestMatchers(HttpMethod.POST, "/api/*/member/members/join").permitAll()
-//                                .requestMatchers("/api/*/member/members/randomSecureTip").permitAll()
-//                                .requestMatchers("/api/*/**").authenticated()
+                                .requestMatchers("/h2-console/**").permitAll()
+                                .requestMatchers("/api/*/member/members/login", "/api/*/member/members/logout").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/*/member/members/join").permitAll()
+                                .requestMatchers("/api/*/member/members/randomSecureTip").permitAll()
+                                .requestMatchers("/api/*/**").authenticated()
                                 .anyRequest().permitAll()
                 )
                 .headers(
