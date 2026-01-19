@@ -4,12 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.back")
 @EnableJpaAuditing
-public class BackApplication {
-
+public class MemberApplication {
     public static void main(String[] args) {
-        SpringApplication.run(BackApplication.class, args);
+        SpringApplication.run(MemberApplication.class, args);
     }
-
 }

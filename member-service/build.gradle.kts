@@ -6,7 +6,7 @@ plugins {
 
 group = "com"
 version = "0.0.1-SNAPSHOT"
-description = "back"
+description = "member-service"
 
 java {
     toolchain {
@@ -52,7 +52,15 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-// 메인 앱 bootJar 설정
+springBoot {
+    mainClass.set("com.back.MemberApplication")
+}
+
 tasks.bootJar {
-    archiveFileName.set("back.jar")
+    enabled = true
+    archiveFileName.set("member-service.jar")
+}
+
+tasks.jar {
+    enabled = true
 }
