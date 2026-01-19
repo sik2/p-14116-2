@@ -37,19 +37,31 @@ public class CashDataInit {
 
     @Transactional
     public void makeBaseCredits() {
-        CashMember user1Member = cashFacade.findMemberByUsername("user1").get();
-        CashMember user2Member = cashFacade.findMemberByUsername("user2").get();
+        // 독립 실행 시 CashMember가 없을 수 있으므로 체크
+        var user1MemberOpt = cashFacade.findMemberByUsername("user1");
+        if (user1MemberOpt.isEmpty()) {
+            log.info("CashMember not found. Skipping cash data init. (Member sync required via event)");
+            return;
+        }
 
-        Wallet user1Wallet = cashFacade.findWalletByHolder(user1Member).get();
+        CashMember user1Member = user1MemberOpt.get();
+        CashMember user2Member = cashFacade.findMemberByUsername("user2").orElse(null);
 
+        var user1WalletOpt = cashFacade.findWalletByHolder(user1Member);
+        if (user1WalletOpt.isEmpty()) return;
+
+        Wallet user1Wallet = user1WalletOpt.get();
         if (user1Wallet.hasBalance()) return;
 
         user1Wallet.credit(150_000, CashLog.EventType.충전__무통장입금);
         user1Wallet.credit(100_000, CashLog.EventType.충전__무통장입금);
         user1Wallet.credit(50_000, CashLog.EventType.충전__무통장입금);
 
-        Wallet user2Wallet = cashFacade.findWalletByHolder(user2Member).get();
-
-        user2Wallet.credit(150_000, CashLog.EventType.충전__무통장입금);
+        if (user2Member != null) {
+            var user2WalletOpt = cashFacade.findWalletByHolder(user2Member);
+            if (user2WalletOpt.isPresent()) {
+                user2WalletOpt.get().credit(150_000, CashLog.EventType.충전__무통장입금);
+            }
+        }
     }
 }
