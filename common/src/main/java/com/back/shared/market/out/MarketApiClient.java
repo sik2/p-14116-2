@@ -1,5 +1,6 @@
 package com.back.shared.market.out;
 
+import com.back.global.auth.SystemAuthTokenProvider;
 import com.back.shared.market.dto.OrderItemDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -11,8 +12,13 @@ import java.util.List;
 @Service
 public class MarketApiClient {
     private final RestClient restClient;
+    private final SystemAuthTokenProvider systemAuthTokenProvider;
 
-    public MarketApiClient(@Value("${custom.services.market-url}") String marketServiceUrl) {
+    public MarketApiClient(
+            @Value("${custom.services.market-url}") String marketServiceUrl,
+            SystemAuthTokenProvider systemAuthTokenProvider
+    ) {
+        this.systemAuthTokenProvider = systemAuthTokenProvider;
         this.restClient = RestClient.builder()
                 .baseUrl(marketServiceUrl + "/api/v1/market")
                 .build();
@@ -22,6 +28,7 @@ public class MarketApiClient {
         return restClient
                 .get()
                 .uri("/orders/%d/items".formatted(id))
+                .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });
