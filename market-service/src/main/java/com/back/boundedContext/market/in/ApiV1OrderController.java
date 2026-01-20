@@ -45,7 +45,8 @@ public class ApiV1OrderController {
             @PathVariable int id,
             @Valid @RequestBody ConfirmPaymentByTossPaymentsReqBody reqBody
     ) {
-        Order order = marketFacade.findOrderById(id).get();
+        Order order = marketFacade.findOrderById(id)
+                .orElseThrow(() -> new DomainException("404-1", "주문을 찾을 수 없습니다."));
 
         if (order.isCanceled())
             throw new DomainException("400-1", "이미 취소된 주문입니다.");
@@ -79,10 +80,9 @@ public class ApiV1OrderController {
     @GetMapping("/{id}/items")
     @Transactional(readOnly = true)
     public List<OrderItemDto> getItems(@PathVariable int id) {
-        return marketFacade
-                .findOrderById(id)
-                .get()
-                .getItems()
+        Order order = marketFacade.findOrderById(id)
+                .orElseThrow(() -> new DomainException("404-1", "주문을 찾을 수 없습니다."));
+        return order.getItems()
                 .stream()
                 .map(OrderItem::toDto)
                 .toList();

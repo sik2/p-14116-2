@@ -2,6 +2,7 @@ package com.back.boundedContext.post.in;
 
 import com.back.boundedContext.post.app.PostFacade;
 import com.back.boundedContext.post.domain.Post;
+import com.back.global.exception.DomainException;
 import com.back.shared.post.dto.PostDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,6 @@ public class ApiV1PostController {
         return postFacade
                 .findById(id)
                 .map(Post::toDto)
-                .get();
+                .orElseThrow(() -> new DomainException("404-1", "게시글을 찾을 수 없습니다."));
     }
 }

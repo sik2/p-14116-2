@@ -2,6 +2,7 @@ package com.back.boundedContext.member.in;
 
 import com.back.boundedContext.member.app.MemberFacade;
 import com.back.boundedContext.member.domain.Member;
+import com.back.global.exception.DomainException;
 import com.back.global.rq.Rq;
 import com.back.global.rsData.RsData;
 import com.back.shared.member.dto.MemberDto;
@@ -75,8 +76,9 @@ public class ApiV1MemberController {
     @GetMapping("/me")
     @Transactional(readOnly = true)
     public MemberDto me() {
-        Member member = memberFacade.findById(rq.getActor().getId()).get();
-        return member.toDto();
+        return memberFacade.findById(rq.getActor().getId())
+                .map(Member::toDto)
+                .orElseThrow(() -> new DomainException("404-1", "회원을 찾을 수 없습니다."));
     }
 
     @GetMapping("/{id}")

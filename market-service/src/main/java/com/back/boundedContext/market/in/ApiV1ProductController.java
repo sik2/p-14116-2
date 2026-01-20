@@ -3,6 +3,7 @@ package com.back.boundedContext.market.in;
 import com.back.boundedContext.market.app.MarketFacade;
 import com.back.boundedContext.market.domain.MarketMember;
 import com.back.boundedContext.market.domain.Product;
+import com.back.global.exception.DomainException;
 import com.back.global.rq.Rq;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,7 +63,8 @@ public class ApiV1ProductController {
     @GetMapping("/mine")
     @Transactional(readOnly = true)
     public List<ProductDto> getMyProducts() {
-        MarketMember seller = marketFacade.findMemberByUsername(rq.getActor().getUsername()).get();
+        MarketMember seller = marketFacade.findMemberByUsername(rq.getActor().getUsername())
+                .orElseThrow(() -> new DomainException("404-1", "회원을 찾을 수 없습니다."));
         return marketFacade.findProductsBySeller(seller)
                 .stream()
                 .map(ProductDto::from)
