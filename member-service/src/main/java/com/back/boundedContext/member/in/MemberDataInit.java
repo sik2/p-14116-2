@@ -2,6 +2,7 @@ package com.back.boundedContext.member.in;
 
 import com.back.boundedContext.member.app.MemberFacade;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,9 @@ public class MemberDataInit {
 
     private final MemberDataInit self;
     private final MemberFacade memberFacade;
+
+    @Value("${custom.system.apiKey}")
+    private String systemApiKey;
 
     public MemberDataInit(
             @Lazy MemberDataInit self,
@@ -52,7 +56,9 @@ public class MemberDataInit {
             return;
         }
 
-        memberFacade.join("system", "1234", "시스템");
+        var systemMember = memberFacade.join("system", "1234", "시스템").getData();
+        systemMember.changeApiKey(systemApiKey);
+
         memberFacade.join("holding", "1234", "홀딩");
         memberFacade.join("admin", "1234", "관리자");
         memberFacade.join("user1", "1234", "유저1");

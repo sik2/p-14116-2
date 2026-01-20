@@ -28,7 +28,7 @@ public class MemberApiClient implements AuthTokenValidator {
     public String getRandomSecureTip() {
         return restClient.get()
                 .uri("/randomSecureTip")
-                .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                 .retrieve()
                 .body(String.class);
     }
@@ -38,7 +38,7 @@ public class MemberApiClient implements AuthTokenValidator {
         try {
             return restClient.post()
                     .uri("/validate-token")
-                    .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                    .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of("accessToken", accessToken))
                     .retrieve()
@@ -53,7 +53,7 @@ public class MemberApiClient implements AuthTokenValidator {
         try {
             return restClient.get()
                     .uri("/by-apikey/" + apiKey)
-                    .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                    .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                     .retrieve()
                     .body(MemberDto.class);
         } catch (Exception e) {
@@ -65,7 +65,7 @@ public class MemberApiClient implements AuthTokenValidator {
         try {
             return restClient.get()
                     .uri("/" + id)
-                    .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                    .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                     .retrieve()
                     .body(MemberDto.class);
         } catch (Exception e) {
@@ -79,7 +79,7 @@ public class MemberApiClient implements AuthTokenValidator {
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
                     .uri("/" + memberId + "/access-token")
-                    .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                    .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                     .retrieve()
                     .body(Map.class);
             return response != null ? (String) response.get("data") : null;

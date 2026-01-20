@@ -43,6 +43,8 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
 custom:
+  system:
+    apiKey: system-api-key-for-internal-service-communication
   services:
     member-url: http://localhost:8080
     post-url: http://localhost:8081

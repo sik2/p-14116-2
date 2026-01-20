@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -39,7 +40,18 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void work(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // API 요청이 아니라면 패스
         if (!request.getRequestURI().startsWith("/api/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 인증, 인가가 필요없는 API 요청이라면 패스
+        if (List.of(
+                "/api/v1/member/members/login",
+                "/api/v1/member/members/logout",
+                "/api/v1/member/members/join"
+        ).contains(request.getRequestURI())) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -65,6 +77,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         boolean isApiKeyExists = !apiKey.isBlank();
         boolean isAccessTokenExists = !accessToken.isBlank();
 
+        // 둘 다 없으면 그냥 통과
         if (!isApiKeyExists && !isAccessTokenExists) {
             filterChain.doFilter(request, response);
             return;
