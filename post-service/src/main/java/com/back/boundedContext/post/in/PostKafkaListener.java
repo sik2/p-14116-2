@@ -19,14 +19,14 @@ public class PostKafkaListener {
     @KafkaListener(topics = KafkaTopics.MEMBER_JOINED, groupId = "post-service")
     @Transactional
     public void handleMemberJoined(MemberJoinedEvent event) {
-        log.info("Received MemberJoinedEvent: {}", event.getMember().getUsername());
-        postFacade.syncMember(event.getMember());
+        log.info("Received MemberJoinedEvent: {}", event.member().username());
+        postFacade.syncMember(event.member());
     }
 
     @KafkaListener(topics = KafkaTopics.MEMBER_MODIFIED, groupId = "post-service")
     @Transactional
     public void handleMemberModified(MemberModifiedEvent event) {
-        log.info("Received MemberModifiedEvent: {}", event.getMember().getUsername());
-        postFacade.syncMember(event.getMember());
+        log.info("Received MemberModifiedEvent: {}", event.member().username());
+        postFacade.syncMember(event.member());
     }
 }

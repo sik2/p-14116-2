@@ -22,35 +22,35 @@ public class PayoutKafkaListener {
     @KafkaListener(topics = KafkaTopics.MEMBER_JOINED, groupId = "payout-service")
     @Transactional
     public void handleMemberJoined(MemberJoinedEvent event) {
-        log.info("Received MemberJoinedEvent: {}", event.getMember().getUsername());
-        payoutFacade.syncMember(event.getMember());
+        log.info("Received MemberJoinedEvent: {}", event.member().username());
+        payoutFacade.syncMember(event.member());
     }
 
     @KafkaListener(topics = KafkaTopics.MEMBER_MODIFIED, groupId = "payout-service")
     @Transactional
     public void handleMemberModified(MemberModifiedEvent event) {
-        log.info("Received MemberModifiedEvent: {}", event.getMember().getUsername());
-        payoutFacade.syncMember(event.getMember());
+        log.info("Received MemberModifiedEvent: {}", event.member().username());
+        payoutFacade.syncMember(event.member());
     }
 
     @KafkaListener(topics = KafkaTopics.PAYOUT_MEMBER_CREATED, groupId = "payout-service")
     @Transactional
     public void handlePayoutMemberCreated(PayoutMemberCreatedEvent event) {
-        log.info("Received PayoutMemberCreatedEvent: {}", event.getMember().getUsername());
-        payoutFacade.createPayout(event.getMember().getId());
+        log.info("Received PayoutMemberCreatedEvent: {}", event.member().username());
+        payoutFacade.createPayout(event.member().id());
     }
 
     @KafkaListener(topics = KafkaTopics.MARKET_ORDER_PAYMENT_COMPLETED, groupId = "payout-service")
     @Transactional
     public void handleMarketOrderPaymentCompleted(MarketOrderPaymentCompletedEvent event) {
-        log.info("Received MarketOrderPaymentCompletedEvent for order: {}", event.getOrder().getId());
-        payoutFacade.addPayoutCandidateItems(event.getOrder());
+        log.info("Received MarketOrderPaymentCompletedEvent for order: {}", event.order().id());
+        payoutFacade.addPayoutCandidateItems(event.order());
     }
 
     @KafkaListener(topics = KafkaTopics.PAYOUT_COMPLETED, groupId = "payout-service")
     @Transactional
     public void handlePayoutCompleted(PayoutCompletedEvent event) {
-        log.info("Received PayoutCompletedEvent: {}", event.getPayout().getId());
-        payoutFacade.createPayout(event.getPayout().getPayeeId());
+        log.info("Received PayoutCompletedEvent: {}", event.payout().id());
+        payoutFacade.createPayout(event.payout().payeeId());
     }
 }

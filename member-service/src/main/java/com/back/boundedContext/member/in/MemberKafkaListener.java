@@ -20,8 +20,8 @@ public class MemberKafkaListener {
     @KafkaListener(topics = KafkaTopics.POST_CREATED, groupId = "member-service")
     @Transactional
     public void handlePostCreated(PostCreatedEvent event) {
-        log.info("Received PostCreatedEvent: {}", event.getPost().getId());
-        Member member = memberFacade.findById(event.getPost().getAuthorId()).orElse(null);
+        log.info("Received PostCreatedEvent: {}", event.post().id());
+        Member member = memberFacade.findById(event.post().authorId()).orElse(null);
         if (member != null) {
             member.increaseActivityScore(3);
         }
@@ -30,8 +30,8 @@ public class MemberKafkaListener {
     @KafkaListener(topics = KafkaTopics.POST_COMMENT_CREATED, groupId = "member-service")
     @Transactional
     public void handlePostCommentCreated(PostCommentCreatedEvent event) {
-        log.info("Received PostCommentCreatedEvent: {}", event.getPostComment().getId());
-        Member member = memberFacade.findById(event.getPostComment().getAuthorId()).orElse(null);
+        log.info("Received PostCommentCreatedEvent: {}", event.postComment().id());
+        Member member = memberFacade.findById(event.postComment().authorId()).orElse(null);
         if (member != null) {
             member.increaseActivityScore(1);
         }

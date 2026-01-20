@@ -22,37 +22,37 @@ public class MarketKafkaListener {
     @KafkaListener(topics = KafkaTopics.MEMBER_JOINED, groupId = "market-service")
     @Transactional
     public void handleMemberJoined(MemberJoinedEvent event) {
-        log.info("Received MemberJoinedEvent: {}", event.getMember().getUsername());
-        marketFacade.syncMember(event.getMember());
+        log.info("Received MemberJoinedEvent: {}", event.member().username());
+        marketFacade.syncMember(event.member());
     }
 
     @KafkaListener(topics = KafkaTopics.MEMBER_MODIFIED, groupId = "market-service")
     @Transactional
     public void handleMemberModified(MemberModifiedEvent event) {
-        log.info("Received MemberModifiedEvent: {}", event.getMember().getUsername());
-        marketFacade.syncMember(event.getMember());
+        log.info("Received MemberModifiedEvent: {}", event.member().username());
+        marketFacade.syncMember(event.member());
     }
 
     @KafkaListener(topics = KafkaTopics.MARKET_MEMBER_CREATED, groupId = "market-service")
     @Transactional
     public void handleMarketMemberCreated(MarketMemberCreatedEvent event) {
-        log.info("Received MarketMemberCreatedEvent: {}", event.getMember().getUsername());
-        marketFacade.createCart(event.getMember());
+        log.info("Received MarketMemberCreatedEvent: {}", event.member().username());
+        marketFacade.createCart(event.member());
     }
 
     @KafkaListener(topics = KafkaTopics.CASH_ORDER_PAYMENT_SUCCEEDED, groupId = "market-service")
     @Transactional
     public void handleCashOrderPaymentSucceeded(CashOrderPaymentSucceededEvent event) {
-        log.info("Received CashOrderPaymentSucceededEvent for order: {}", event.getOrder().getId());
-        int orderId = event.getOrder().getId();
+        log.info("Received CashOrderPaymentSucceededEvent for order: {}", event.order().id());
+        int orderId = event.order().id();
         marketFacade.completeOrderPayment(orderId);
     }
 
     @KafkaListener(topics = KafkaTopics.CASH_ORDER_PAYMENT_FAILED, groupId = "market-service")
     @Transactional
     public void handleCashOrderPaymentFailed(CashOrderPaymentFailedEvent event) {
-        log.info("Received CashOrderPaymentFailedEvent for order: {}", event.getOrder().getId());
-        int orderId = event.getOrder().getId();
+        log.info("Received CashOrderPaymentFailedEvent for order: {}", event.order().id());
+        int orderId = event.order().id();
         marketFacade.cancelOrderRequestPayment(orderId);
     }
 }
