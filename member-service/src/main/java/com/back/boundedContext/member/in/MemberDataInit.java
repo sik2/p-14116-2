@@ -1,7 +1,6 @@
 package com.back.boundedContext.member.in;
 
 import com.back.boundedContext.member.app.MemberFacade;
-import com.back.boundedContext.member.domain.Member;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Configuration
 @Slf4j
 public class MemberDataInit {
+    private static final int WAIT_FOR_OTHER_MODULES_SECONDS = 10;
+
     private final MemberDataInit self;
     private final MemberFacade memberFacade;
 
@@ -28,19 +29,34 @@ public class MemberDataInit {
     @Order(1)
     public ApplicationRunner memberDataInitApplicationRunner() {
         return args -> {
+            waitForOtherModules();
             self.makeBaseMembers();
         };
     }
 
+    private void waitForOtherModules() {
+        log.info("Waiting {}s for other modules to start...", WAIT_FOR_OTHER_MODULES_SECONDS);
+        try {
+            Thread.sleep(WAIT_FOR_OTHER_MODULES_SECONDS * 1000L);
+            log.info("Wait complete. Proceeding with member data init.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Wait interrupted.");
+        }
+    }
+
     @Transactional
     public void makeBaseMembers() {
-        if (memberFacade.count() > 0) return;
+        if (memberFacade.count() > 0) {
+            log.info("Members already exist. Skipping creation.");
+            return;
+        }
 
-        Member systemMember = memberFacade.join("system", "1234", "시스템").getData();
-        Member holdingMember = memberFacade.join("holding", "1234", "홀딩").getData();
-        Member adminMember = memberFacade.join("admin", "1234", "관리자").getData();
-        Member user1Member = memberFacade.join("user1", "1234", "유저1").getData();
-        Member user2Member = memberFacade.join("user2", "1234", "유저2").getData();
-        Member user3Member = memberFacade.join("user3", "1234", "유저3").getData();
+        memberFacade.join("system", "1234", "시스템");
+        memberFacade.join("holding", "1234", "홀딩");
+        memberFacade.join("admin", "1234", "관리자");
+        memberFacade.join("user1", "1234", "유저1");
+        memberFacade.join("user2", "1234", "유저2");
+        memberFacade.join("user3", "1234", "유저3");
     }
 }

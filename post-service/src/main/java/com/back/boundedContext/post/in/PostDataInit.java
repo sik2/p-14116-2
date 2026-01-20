@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Configuration
 @Slf4j
 public class PostDataInit {
+    private static final int WAIT_SECONDS = 30;
+    private static final int RETRY_INTERVAL_MS = 1000;
+
     private final PostDataInit self;
     private final PostFacade postFacade;
 
@@ -30,19 +33,36 @@ public class PostDataInit {
     @Order(2)
     public ApplicationRunner postDataInitApplicationRunner() {
         return args -> {
-            self.makeBaseMembers();
-            self.makeBasePosts();
-            self.makeBasePostComments();
+            if (waitForMemberSync()) {
+                self.makeBasePosts();
+                self.makeBasePostComments();
+            }
         };
     }
 
-    @Transactional
-    public void makeBaseMembers() {
-        // 멤버는 Kafka 이벤트(MemberJoinedEvent)를 통해 동기화됨
-        // member-service에서 회원가입 시 이벤트 발행 -> PostKafkaListener에서 수신
-        if (postFacade.findMemberByUsername("user1").isEmpty()) {
-            log.info("PostMember not found. Members will be synced via Kafka events from member-service.");
+    private boolean waitForMemberSync() {
+        log.info("Waiting up to {}s for member sync...", WAIT_SECONDS);
+
+        int maxRetries = WAIT_SECONDS * 1000 / RETRY_INTERVAL_MS;
+        for (int i = 0; i < maxRetries; i++) {
+            if (postFacade.findMemberByUsername("user1").isPresent()) {
+                log.info("Member sync completed. Proceeding with data init.");
+                return true;
+            }
+            if (i > 0 && i % 5 == 0) {
+                log.info("Still waiting for member sync... {}s elapsed", i);
+            }
+            try {
+                Thread.sleep(RETRY_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Wait interrupted.");
+                return false;
+            }
         }
+
+        log.warn("Member sync timeout after {}s. Skipping data init. (Kafka event not received?)", WAIT_SECONDS);
+        return false;
     }
 
     @Transactional

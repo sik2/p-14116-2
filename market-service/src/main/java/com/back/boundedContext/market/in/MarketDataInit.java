@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Configuration
 @Slf4j
 public class MarketDataInit {
+    private static final int WAIT_SECONDS = 30;
+    private static final int RETRY_INTERVAL_MS = 1000;
+
     private final MarketDataInit self;
     private final MarketFacade marketFacade;
 
@@ -29,40 +32,75 @@ public class MarketDataInit {
     @org.springframework.core.annotation.Order(3)
     public ApplicationRunner marketDataInitApplicationRunner() {
         return args -> {
-            self.makeBaseProducts();
-            self.makeBaseCartItems();
-            self.makeBaseOrders();
-            self.makeBasePaidOrders();
+            if (waitForMemberSync()) {
+                self.makeBaseCarts();
+                self.makeBaseProducts();
+                self.makeBaseCartItems();
+                self.makeBaseOrders();
+                self.makeBasePaidOrders();
+            }
         };
+    }
+
+    private boolean waitForMemberSync() {
+        log.info("Waiting {}s for member sync...", WAIT_SECONDS);
+
+        int maxRetries = WAIT_SECONDS * 1000 / RETRY_INTERVAL_MS;
+        for (int i = 0; i < maxRetries; i++) {
+            if (marketFacade.findMemberByUsername("user1").isPresent()) {
+                log.info("Member sync completed. Proceeding with data init.");
+                return true;
+            }
+            try {
+                Thread.sleep(RETRY_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        log.warn("Member sync timeout after {}s. Skipping data init.", WAIT_SECONDS);
+        return false;
+    }
+
+    @Transactional
+    public void makeBaseCarts() {
+        var members = java.util.List.of("system", "holding", "admin", "user1", "user2", "user3");
+
+        for (String username : members) {
+            var memberOpt = marketFacade.findMemberByUsername(username);
+            if (memberOpt.isEmpty()) continue;
+
+            MarketMember member = memberOpt.get();
+            if (marketFacade.findCartByBuyer(member).isPresent()) continue;
+
+            marketFacade.createCart(member.toDto());
+        }
     }
 
     @Transactional
     public void makeBaseProducts() {
         if (marketFacade.productsCount() > 0) return;
 
-        // 독립 실행 시 MarketMember가 없을 수 있으므로 체크
         var user1Opt = marketFacade.findMemberByUsername("user1");
-        if (user1Opt.isEmpty()) {
-            log.info("MarketMember not found. Skipping market data init. (Member sync required via event)");
+        var user2Opt = marketFacade.findMemberByUsername("user2");
+        var user3Opt = marketFacade.findMemberByUsername("user3");
+
+        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) {
+            log.info("MarketMembers not found. Skipping product creation.");
             return;
         }
 
-        MarketMember user1MarketMember = user1Opt.get();
-        MarketMember user2MarketMember = marketFacade.findMemberByUsername("user2").orElse(null);
-        MarketMember user3MarketMember = marketFacade.findMemberByUsername("user3").orElse(null);
+        MarketMember user1 = user1Opt.get();
+        MarketMember user2 = user2Opt.get();
+        MarketMember user3 = user3Opt.get();
 
-        if (user2MarketMember == null || user3MarketMember == null) {
-            log.info("Some MarketMembers not found. Skipping product creation.");
-            return;
-        }
-
-        // 간단한 테스트 데이터 생성 (PostApiClient 의존성 제거)
-        marketFacade.createProduct(user1MarketMember, "post", 1, "상품1", "상품1 설명", 10_000, 10_000);
-        marketFacade.createProduct(user1MarketMember, "post", 2, "상품2", "상품2 설명", 15_000, 15_000);
-        marketFacade.createProduct(user1MarketMember, "post", 3, "상품3", "상품3 설명", 20_000, 20_000);
-        marketFacade.createProduct(user2MarketMember, "post", 4, "상품4", "상품4 설명", 25_000, 25_000);
-        marketFacade.createProduct(user2MarketMember, "post", 5, "상품5", "상품5 설명", 30_000, 30_000);
-        marketFacade.createProduct(user3MarketMember, "post", 6, "상품6", "상품6 설명", 35_000, 35_000);
+        marketFacade.createProduct(user1, "post", 1, "상품1", "상품1 설명", 10_000, 10_000);
+        marketFacade.createProduct(user1, "post", 2, "상품2", "상품2 설명", 15_000, 15_000);
+        marketFacade.createProduct(user1, "post", 3, "상품3", "상품3 설명", 20_000, 20_000);
+        marketFacade.createProduct(user2, "post", 4, "상품4", "상품4 설명", 25_000, 25_000);
+        marketFacade.createProduct(user2, "post", 5, "상품5", "상품5 설명", 30_000, 30_000);
+        marketFacade.createProduct(user3, "post", 6, "상품6", "상품6 설명", 35_000, 35_000);
     }
 
     @Transactional
@@ -71,10 +109,7 @@ public class MarketDataInit {
         var user2Opt = marketFacade.findMemberByUsername("user2");
         var user3Opt = marketFacade.findMemberByUsername("user3");
 
-        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) {
-            log.info("MarketMembers not found. Skipping cart items creation.");
-            return;
-        }
+        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) return;
 
         var cart1Opt = marketFacade.findCartByBuyer(user1Opt.get());
         var cart2Opt = marketFacade.findCartByBuyer(user2Opt.get());
@@ -115,10 +150,7 @@ public class MarketDataInit {
         var user2Opt = marketFacade.findMemberByUsername("user2");
         var user3Opt = marketFacade.findMemberByUsername("user3");
 
-        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) {
-            log.info("MarketMembers not found. Skipping orders creation.");
-            return;
-        }
+        if (user1Opt.isEmpty() || user2Opt.isEmpty() || user3Opt.isEmpty()) return;
 
         var cart1Opt = marketFacade.findCartByBuyer(user1Opt.get());
         var cart2Opt = marketFacade.findCartByBuyer(user2Opt.get());
