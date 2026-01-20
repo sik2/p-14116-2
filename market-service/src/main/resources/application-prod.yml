@@ -1,0 +1,25 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update # TODO: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        highlight_sql: false
+        use_sql_comments: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
+logging:
+  level:
+    com.back: INFO
+    org.hibernate.orm.jdbc.bind: WARN
+    org.hibernate.orm.jdbc.extract: WARN
+    org.springframework.transaction.interceptor: WARN
+custom:
+  services:
+    member-url: ${MEMBER_SERVICE_URL:http://member-service:8080}
+    post-url: ${POST_SERVICE_URL:http://post-service:8081}
+    payout-url: ${PAYOUT_SERVICE_URL:http://payout-service:8082}
+    cash-url: ${CASH_SERVICE_URL:http://cash-service:8083}
+    market-url: ${MARKET_SERVICE_URL:http://market-service:8084}

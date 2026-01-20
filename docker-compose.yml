@@ -1,4 +1,27 @@
+x-service-common: &service-common
+  profiles:
+    - prod
+  environment:
+    SPRING_PROFILES_ACTIVE: prod
+  env_file:
+    - .env
+
+x-build-common: &build-common
+  context: .
+  dockerfile: Dockerfile
+
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -36,3 +59,45 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+  member-service:
+    <<: *service-common
+    build:
+      <<: *build-common
+      args:
+        MODULE: member-service
+    container_name: member-service
+    image: member-service
+
+  post-service:
+    <<: *service-common
+    build:
+      <<: *build-common
+      args:
+        MODULE: post-service
+    container_name: post-service
+    image: post-service
+  payout-service:
+    <<: *service-common
+    build:
+      <<: *build-common
+      args:
+        MODULE: payout-service
+    container_name: payout-
+    image: payout-service
+  cash-service:
+    <<: *service-common
+    build:
+      <<: *build-common
+      args:
+        MODULE: cash-service
+    container_name: cash-service
+    image: cash-service
+
+  market-service:
+    <<: *service-common
+    build:
+      <<: *build-common
+      args:
+        MODULE: market-service
+    container_name: market-service
+    image: market-service
