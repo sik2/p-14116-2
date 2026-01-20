@@ -78,4 +78,42 @@ public class ApiV1MemberController {
         Member member = memberFacade.findById(rq.getActor().getId()).get();
         return member.toDto();
     }
+
+    @GetMapping("/{id}")
+    @Transactional(readOnly = true)
+    public MemberDto getMemberById(@PathVariable int id) {
+        return memberFacade.findById(id)
+                .map(Member::toDto)
+                .orElse(null);
+    }
+
+    @GetMapping("/by-apikey/{apiKey}")
+    @Transactional(readOnly = true)
+    public MemberDto getMemberByApiKey(@PathVariable String apiKey) {
+        return memberFacade.findByApiKey(apiKey)
+                .map(Member::toDto)
+                .orElse(null);
+    }
+
+    public record ValidateTokenReqBody(String accessToken) {}
+
+    @PostMapping("/validate-token")
+    @Transactional(readOnly = true)
+    public MemberDto validateToken(@RequestBody ValidateTokenReqBody reqBody) {
+        var payload = memberFacade.payload(reqBody.accessToken());
+        if (payload == null) return null;
+
+        int id = (int) payload.get("id");
+        return memberFacade.findById(id)
+                .map(Member::toDto)
+                .orElse(null);
+    }
+
+    @PostMapping("/{id}/access-token")
+    @Transactional(readOnly = true)
+    public RsData<String> generateAccessToken(@PathVariable int id) {
+        return memberFacade.findById(id)
+                .map(member -> new RsData<>("200-1", "토큰 생성 성공", memberFacade.genAccessToken(member)))
+                .orElse(new RsData<>("404-1", "회원을 찾을 수 없습니다.", null));
+    }
 }
