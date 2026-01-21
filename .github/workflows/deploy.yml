@@ -169,19 +169,24 @@ jobs:
           # Encode secret.yaml as base64
           SECRET_YAML_BASE64=$(base64 -w 0 k8s/secret.yaml)
 
+          # Build commands JSON
+          cat > /tmp/ssm-commands.json << EOF
+          {
+            "commands": [
+              "cd ~",
+              "if [ -d msa-k8s ]; then cd msa-k8s && git pull; else git clone https://github.com/${{ github.repository }}.git msa-k8s && cd msa-k8s; fi",
+              "echo '${SECRET_YAML_BASE64}' | base64 -d > k8s/secret.yaml",
+              "kubectl apply -k k8s",
+              "kubectl rollout restart deployment ${SERVICES} -n backend || true"
+            ]
+          }
+          EOF
+
           # Send commands via SSM
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${INSTANCE_ID}" \
             --document-name "AWS-RunShellScript" \
-            --parameters "{
-              \"commands\": [
-                \"cd ~\",
-                \"if [ -d msa-k8s ]; then cd msa-k8s && git pull; else git clone https://github.com/${{ github.repository }}.git msa-k8s && cd msa-k8s; fi\",
-                \"echo '${SECRET_YAML_BASE64}' | base64 -d > k8s/secret.yaml\",
-                \"kubectl apply -k k8s\",
-                \"SERVICES='${SERVICES}'; if [ -n \\\"\\$SERVICES\\\" ]; then kubectl rollout restart deployment \\$SERVICES -n backend; fi\"
-              ]
-            }" \
+            --parameters file:///tmp/ssm-commands.json \
             --query "Command.CommandId" \
             --output text)
 
