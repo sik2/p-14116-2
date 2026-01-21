@@ -29,6 +29,7 @@ jobs:
       market: ${{ steps.filter.outputs.market }}
       common: ${{ steps.filter.outputs.common }}
       k8s: ${{ steps.filter.outputs.k8s }}
+      workflow: ${{ steps.filter.outputs.workflow }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -49,6 +50,8 @@ jobs:
               - 'common/**'
             k8s:
               - 'k8s/**'
+            workflow:
+              - '.github/workflows/**'
 
   build-and-push:
     needs: detect-changes
@@ -57,15 +60,15 @@ jobs:
       matrix:
         include:
           - service: member-service
-            changed: ${{ needs.detect-changes.outputs.member == 'true' || needs.detect-changes.outputs.common == 'true' }}
+            changed: ${{ needs.detect-changes.outputs.member == 'true' || needs.detect-changes.outputs.common == 'true' || needs.detect-changes.outputs.workflow == 'true' }}
           - service: post-service
-            changed: ${{ needs.detect-changes.outputs.post == 'true' || needs.detect-changes.outputs.common == 'true' }}
+            changed: ${{ needs.detect-changes.outputs.post == 'true' || needs.detect-changes.outputs.common == 'true' || needs.detect-changes.outputs.workflow == 'true' }}
           - service: payout-service
-            changed: ${{ needs.detect-changes.outputs.payout == 'true' || needs.detect-changes.outputs.common == 'true' }}
+            changed: ${{ needs.detect-changes.outputs.payout == 'true' || needs.detect-changes.outputs.common == 'true' || needs.detect-changes.outputs.workflow == 'true' }}
           - service: cash-service
-            changed: ${{ needs.detect-changes.outputs.cash == 'true' || needs.detect-changes.outputs.common == 'true' }}
+            changed: ${{ needs.detect-changes.outputs.cash == 'true' || needs.detect-changes.outputs.common == 'true' || needs.detect-changes.outputs.workflow == 'true' }}
           - service: market-service
-            changed: ${{ needs.detect-changes.outputs.market == 'true' || needs.detect-changes.outputs.common == 'true' }}
+            changed: ${{ needs.detect-changes.outputs.market == 'true' || needs.detect-changes.outputs.common == 'true' || needs.detect-changes.outputs.workflow == 'true' }}
     steps:
       - name: Skip if not changed
         if: matrix.changed != 'true'
@@ -141,20 +144,26 @@ jobs:
         run: |
           # Determine which services changed
           SERVICES=""
-          if [ "${{ needs.detect-changes.outputs.member }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-            SERVICES="$SERVICES member-service"
-          fi
-          if [ "${{ needs.detect-changes.outputs.post }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-            SERVICES="$SERVICES post-service"
-          fi
-          if [ "${{ needs.detect-changes.outputs.payout }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-            SERVICES="$SERVICES payout-service"
-          fi
-          if [ "${{ needs.detect-changes.outputs.cash }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-            SERVICES="$SERVICES cash-service"
-          fi
-          if [ "${{ needs.detect-changes.outputs.market }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-            SERVICES="$SERVICES market-service"
+          WORKFLOW_CHANGED="${{ needs.detect-changes.outputs.workflow }}"
+
+          if [ "$WORKFLOW_CHANGED" == "true" ]; then
+            SERVICES="member-service post-service payout-service cash-service market-service"
+          else
+            if [ "${{ needs.detect-changes.outputs.member }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+              SERVICES="$SERVICES member-service"
+            fi
+            if [ "${{ needs.detect-changes.outputs.post }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+              SERVICES="$SERVICES post-service"
+            fi
+            if [ "${{ needs.detect-changes.outputs.payout }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+              SERVICES="$SERVICES payout-service"
+            fi
+            if [ "${{ needs.detect-changes.outputs.cash }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+              SERVICES="$SERVICES cash-service"
+            fi
+            if [ "${{ needs.detect-changes.outputs.market }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+              SERVICES="$SERVICES market-service"
+            fi
           fi
 
           # Encode secret.yaml as base64
