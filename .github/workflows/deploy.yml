@@ -12,9 +12,11 @@ on:
       - 'market-service/**'
       - 'common/**'
       - 'k8s/**'
+      - '.github/workflows/**'
 
 env:
-  REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}/msa-k8s
+  REGISTRY: ghcr.io/${{ github.repository_owner }}/msa-k8s
+  EC2_INSTANCE_TAG_NAME: k8s-cluster-node
 
 jobs:
   detect-changes:
@@ -79,12 +81,13 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         if: matrix.changed == 'true'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         if: matrix.changed == 'true'
@@ -118,52 +121,87 @@ jobs:
         run: |
           envsubst < k8s/secret.yaml.template > k8s/secret.yaml
 
-      - name: Setup SSH
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get EC2 Instance ID
+        id: get_instance_id
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${{ env.EC2_INSTANCE_TAG_NAME }}" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          [[ -n "${INSTANCE_ID}" && "${INSTANCE_ID}" != "None" ]] || { echo "No running instance found"; exit 1; }
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> "${GITHUB_ENV}"
 
-      - name: Copy k8s manifests to EC2
+      - name: Deploy to Kubernetes via SSM
         run: |
-          scp -r k8s ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/k8s-manifests
+          # Determine which services changed
+          SERVICES=""
+          if [ "${{ needs.detect-changes.outputs.member }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+            SERVICES="$SERVICES member-service"
+          fi
+          if [ "${{ needs.detect-changes.outputs.post }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+            SERVICES="$SERVICES post-service"
+          fi
+          if [ "${{ needs.detect-changes.outputs.payout }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+            SERVICES="$SERVICES payout-service"
+          fi
+          if [ "${{ needs.detect-changes.outputs.cash }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+            SERVICES="$SERVICES cash-service"
+          fi
+          if [ "${{ needs.detect-changes.outputs.market }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
+            SERVICES="$SERVICES market-service"
+          fi
 
-      - name: Deploy to Kubernetes
-        run: |
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Apply k8s manifests
-            kubectl apply -k ~/k8s-manifests
+          # Encode secret.yaml as base64
+          SECRET_YAML_BASE64=$(base64 -w 0 k8s/secret.yaml)
 
-            # Restart changed deployments
-            SERVICES=""
-            if [ "${{ needs.detect-changes.outputs.member }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-              SERVICES="$SERVICES member-service"
-            fi
-            if [ "${{ needs.detect-changes.outputs.post }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-              SERVICES="$SERVICES post-service"
-            fi
-            if [ "${{ needs.detect-changes.outputs.payout }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-              SERVICES="$SERVICES payout-service"
-            fi
-            if [ "${{ needs.detect-changes.outputs.cash }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-              SERVICES="$SERVICES cash-service"
-            fi
-            if [ "${{ needs.detect-changes.outputs.market }}" == "true" ] || [ "${{ needs.detect-changes.outputs.common }}" == "true" ]; then
-              SERVICES="$SERVICES market-service"
-            fi
+          # Send commands via SSM
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${INSTANCE_ID}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "{
+              \"commands\": [
+                \"cd ~\",
+                \"if [ -d msa-k8s ]; then cd msa-k8s && git pull; else git clone https://github.com/${{ github.repository }}.git msa-k8s && cd msa-k8s; fi\",
+                \"echo '${SECRET_YAML_BASE64}' | base64 -d > k8s/secret.yaml\",
+                \"kubectl apply -k k8s\",
+                \"SERVICES='${SERVICES}'; if [ -n \\\"\\$SERVICES\\\" ]; then kubectl rollout restart deployment \\$SERVICES -n backend; fi\"
+              ]
+            }" \
+            --query "Command.CommandId" \
+            --output text)
 
-            if [ -n "$SERVICES" ]; then
-              echo "Restarting deployments: $SERVICES"
-              kubectl rollout restart deployment $SERVICES -n backend
-            fi
+          # Wait for command to complete
+          echo "Waiting for SSM command to complete..."
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${INSTANCE_ID}" || true
 
-            # Wait for rollout
-            for svc in $SERVICES; do
-              kubectl rollout status deployment/$svc -n backend --timeout=300s
-            done
-          EOF
+          # Get command output
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${INSTANCE_ID}" \
+            --query "[Status, StandardOutputContent, StandardErrorContent]" \
+            --output text
 
       - name: Verify deployment
         run: |
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "kubectl get pods -n backend"
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${INSTANCE_ID}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["kubectl get pods -n backend"]' \
+            --query "Command.CommandId" \
+            --output text)
+
+          sleep 5
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${INSTANCE_ID}" \
+            --query "StandardOutputContent" \
+            --output text
