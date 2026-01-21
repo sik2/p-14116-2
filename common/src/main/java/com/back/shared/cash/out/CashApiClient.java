@@ -25,7 +25,7 @@ public class CashApiClient {
     public WalletDto getItemByHolderId(int holderId) {
         return restClient.get()
                 .uri("/wallets/by-holder/" + holderId)
-                .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });

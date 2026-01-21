@@ -28,7 +28,7 @@ public class MarketApiClient {
         return restClient
                 .get()
                 .uri("/orders/%d/items".formatted(id))
-                .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });

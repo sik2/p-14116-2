@@ -27,7 +27,7 @@ public class PostApiClient {
     public List<PostDto> getItems() {
         return restClient.get()
                 .uri("/posts")
-                .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });
@@ -36,7 +36,7 @@ public class PostApiClient {
     public PostDto getItem(int id) {
         return restClient.get()
                 .uri("/posts/%d".formatted(id))
-                .header("Authorization", "Bearer " + systemAuthTokenProvider.getSystemAccessToken())
+                .header("Authorization", systemAuthTokenProvider.getAuthorizationHeader())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });
