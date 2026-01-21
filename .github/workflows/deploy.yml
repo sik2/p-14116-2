@@ -163,8 +163,11 @@ jobs:
           cat > /tmp/ssm-commands.json << EOF
           {
             "commands": [
-              "cd ~",
-              "if [ -d msa-k8s ]; then cd msa-k8s && git pull; else git clone https://github.com/${{ github.repository }}.git msa-k8s && cd msa-k8s; fi",
+              "export KUBECONFIG=/etc/kubernetes/admin.conf",
+              "cd /tmp",
+              "rm -rf msa-k8s",
+              "git clone https://github.com/${{ github.repository }}.git msa-k8s",
+              "cd msa-k8s",
               "echo '${SECRET_YAML_BASE64}' | base64 -d > k8s/secret.yaml",
               "kubectl apply -k k8s",
               "kubectl rollout restart deployment ${SERVICES} -n backend || true"
@@ -198,7 +201,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${INSTANCE_ID}" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["kubectl get pods -n backend"]' \
+            --parameters 'commands=["export KUBECONFIG=/etc/kubernetes/admin.conf && kubectl get pods -n backend"]' \
             --query "Command.CommandId" \
             --output text)
 
