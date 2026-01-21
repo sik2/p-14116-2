@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: market-service
-          image: sik2dev/msa-k8s:market-service
+          image: ghcr.io/sik2/msa-k8s:market-service
           imagePullPolicy: Never
           ports:
             - containerPort: 8084

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: payout-service
-          image: sik2dev/msa-k8s:payout-service
+          image: ghcr.io/sik2/msa-k8s:payout-service
           imagePullPolicy: Never
           ports:
             - containerPort: 8082
