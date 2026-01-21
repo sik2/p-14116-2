@@ -82,7 +82,7 @@ services:
       args:
         MODULE: member-service
     container_name: member-service
-    image: member-service
+    image: sik2dev/msa-k8s:member-service
 
   post-service:
     <<: *service-common
@@ -91,7 +91,7 @@ services:
       args:
         MODULE: post-service
     container_name: post-service
-    image: post-service
+    image: sik2dev/msa-k8s:post-service
   payout-service:
     <<: *service-common
     build:
@@ -99,7 +99,7 @@ services:
       args:
         MODULE: payout-service
     container_name: payout-
-    image: payout-service
+    image: sik2dev/msa-k8s:payout-service
   cash-service:
     <<: *service-common
     build:
@@ -107,7 +107,7 @@ services:
       args:
         MODULE: cash-service
     container_name: cash-service
-    image: cash-service
+    image: sik2dev/msa-k8s:cash-service
 
   market-service:
     <<: *service-common
@@ -116,7 +116,7 @@ services:
       args:
         MODULE: market-service
     container_name: market-service
-    image: market-service
+    image: sik2dev/msa-k8s:market-service
 
 volumes:
   mysql-data:
