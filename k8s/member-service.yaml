@@ -16,7 +16,7 @@ spec:
       containers:
         - name: member-service
           image: ghcr.io/sik2/msa-k8s:member-service
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:

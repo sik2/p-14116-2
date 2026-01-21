@@ -16,7 +16,7 @@ spec:
       containers:
         - name: cash-service
           image: ghcr.io/sik2/msa-k8s:cash-service
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8083
           env:

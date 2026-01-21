@@ -16,7 +16,7 @@ spec:
       containers:
         - name: post-service
           image: ghcr.io/sik2/msa-k8s:post-service
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           env:
