@@ -6,6 +6,7 @@ namespace: backend
 resources:
   - namespace.yaml
   - secret.yaml
+  - cert-issuer.yaml
   - traefik.yaml
   - redpanda.yaml
   - mysql.yaml

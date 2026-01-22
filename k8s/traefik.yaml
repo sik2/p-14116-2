@@ -68,11 +68,15 @@ spec:
             - --api.insecure=true
             - --providers.kubernetesingress
             - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
             - --log.level=INFO
           ports:
             - name: web
               containerPort: 80
               hostPort: 80
+            - name: websecure
+              containerPort: 443
+              hostPort: 443
             - name: dashboard
               containerPort: 8080
               hostPort: 8080
