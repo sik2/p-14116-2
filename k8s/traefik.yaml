@@ -67,9 +67,10 @@ spec:
           args:
             - --api.insecure=true
             - --providers.kubernetesingress
+            - --providers.kubernetesingress.allowEmptyServices=true
             - --entrypoints.web.address=:80
             - --entrypoints.websecure.address=:443
-            - --log.level=INFO
+            - --log.level=DEBUG
           ports:
             - name: web
               containerPort: 80
