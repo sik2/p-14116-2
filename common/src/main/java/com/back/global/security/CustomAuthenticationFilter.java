@@ -27,6 +27,9 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private final Rq rq;
     private final AuthTokenValidator authTokenValidator;
 
+    @org.springframework.beans.factory.annotation.Value("${custom.system.apiKey}")
+    private String systemApiKey;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
@@ -79,6 +82,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         // 둘 다 없으면 그냥 통과
         if (!isApiKeyExists && !isAccessTokenExists) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 시스템 apiKey인 경우 인증 없이 바로 통과
+        if (isApiKeyExists && apiKey.equals(systemApiKey)) {
             filterChain.doFilter(request, response);
             return;
         }
